@@ -170,13 +170,26 @@ function updateHealthDisplay(projectId, health) {
     const healthContainer = document.getElementById(`health-${projectId}`);
     if (!healthContainer) return;
     
-    if (health.crashCount > 0) {
+    // Check if crash was dismissed - if so, keep it hidden
+    if (health.crashCount > 0 && !AppState.dismissedCrashes[projectId]) {
         healthContainer.style.display = 'block';
         healthContainer.innerHTML = `
-            <i class="bi bi-exclamation-triangle me-1"></i>
-            <strong>Crashes:</strong> ${health.crashCount}
-            ${health.lastCrash ? `<br><small>Last: ${new Date(health.lastCrash.time).toLocaleString()}</small>` : ''}
-            ${health.lastCrash && health.lastCrash.reason ? `<br><small>Reason: ${health.lastCrash.reason}</small>` : ''}
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    <strong>Crashes:</strong> ${health.crashCount}
+                    ${health.lastCrash ? `<br><small>Last: ${new Date(health.lastCrash.time).toLocaleString()}</small>` : ''}
+                    ${health.lastCrash && health.lastCrash.reason ? `<br><small>Reason: ${health.lastCrash.reason}</small>` : ''}
+                </div>
+                <button class="btn btn-sm btn-outline-warning p-0 px-1" onclick="dismissCrashAlert('${projectId}')" title="Dismiss">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+            ${health.crashCount > 1 ? `
+                <button class="btn btn-sm btn-link p-0 text-warning mt-1" onclick="showCrashHistory('${projectId}')">
+                    View History
+                </button>
+            ` : ''}
         `;
     } else {
         healthContainer.style.display = 'none';
