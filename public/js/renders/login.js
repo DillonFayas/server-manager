@@ -6,7 +6,7 @@
 function renderLogin() {
     return `
         <div class="min-vh-100 d-flex align-items-center justify-content-center">
-            <div class="card shadow" style="width: 400px;">
+            <div class="card login-card shadow" style="width: 400px;">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h2 class="card-title mb-0">Server Manager</h2>
