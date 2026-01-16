@@ -1,0 +1,17 @@
+{
+  "server": {
+    "port": 5000,
+    "host": "0.0.0.0"
+  },
+  "auth": {
+    "passwordHash": ""
+  },
+  "email": {
+    "enabled": false,
+    "service": "gmail",
+    "user": "",
+    "pass": "",
+    "recipient": ""
+  },
+  "projects": []
+}

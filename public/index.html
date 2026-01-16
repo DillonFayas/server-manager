@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-bs-theme="dark">
+    <div id="app"></div>
+    
+    <!-- Load scripts in order -->
+    <script src="js/main.js"></script>
+    <script src="js/renders/login.js"></script>
+    <script src="js/renders/projectCard.js"></script>
+    <script src="js/renders/modals.js"></script>
+    <script src="js/renders/dashboard.js"></script>
+    <script src="js/handlemodals.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/handlefilemanager.js"></script>
+    <script src="js/renders/filemanager.js"></script>
+    
+    <!-- Initialize after all scripts loaded -->
+    <script>
+        initTheme();
+        render();
+    </script>
+</body>
+</html>
