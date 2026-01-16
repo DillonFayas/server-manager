@@ -908,16 +908,61 @@ function executeCommandInternal(directory, command, res, env) {
     });
 }
 
+// Check if system is ready (network, services, etc.)
+async function waitForSystemReady() {
+    const maxAttempts = 30; // 30 attempts = 30 seconds max wait
+    let attempts = 0;
+    
+    console.log('Waiting for system to be ready...');
+    
+    while (attempts < maxAttempts) {
+        try {
+            // Try to resolve a common DNS name to check internet connectivity
+            const dns = require('dns').promises;
+            await dns.resolve('google.com');
+            console.log('System is ready (network connectivity confirmed)');
+            return true;
+        } catch (error) {
+            attempts++;
+            if (attempts < maxAttempts) {
+                console.log(`System not ready yet, waiting... (attempt ${attempts}/${maxAttempts})`);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+            }
+        }
+    }
+    
+    console.log('Proceeding without network confirmation (max wait time reached)');
+    return false;
+}
+
 // Auto-start projects on server start
 async function autoStartProjects() {
     try {
+        // Wait for system to be ready before starting projects
+        await waitForSystemReady();
+        
+        // Additional delay to ensure all services are up
+        console.log('Waiting 5 seconds for services to stabilize...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
         const config = await loadConfig();
         const autoStartProjects = config.projects.filter(p => p.autoRestart);
+
+        if (autoStartProjects.length > 0) {
+            console.log(`Auto-starting ${autoStartProjects.length} project(s)...`);
+        } else {
+            console.log('No projects configured for auto-restart');
+            return;
+        }
 
         for (const project of autoStartProjects) {
             console.log(`Auto-starting: ${project.name}`);
             startProject(project);
+            // Small delay between starting each project to avoid overwhelming the system
+            await new Promise(resolve => setTimeout(resolve, 2000));
         }
+        
+        console.log('All auto-start projects have been started');
     } catch (error) {
         console.error('Error auto-starting projects:', error);
     }
