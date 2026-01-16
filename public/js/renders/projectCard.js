@@ -93,7 +93,7 @@ function renderProjectCard(project) {
                         ` : ''}
                     </div>
                     
-                    <div id="health-${project.id}" class="alert alert-warning py-2 px-2 mb-3 small" style="display: ${health.crashCount > 0 ? 'block' : 'none'};">
+                    <div id="health-${project.id}" class="alert alert-warning py-2 px-2 mb-3 small" style="display: ${health.crashCount > 0 && !AppState.dismissedCrashes[project.id] ? 'block' : 'none'};">
                         <div class="d-flex justify-content-between align-items-start">
                             <div class="flex-grow-1">
                                 <i class="bi bi-exclamation-triangle me-1"></i>
@@ -111,7 +111,7 @@ function renderProjectCard(project) {
                             </button>
                         ` : ''}
                     </div>
-
+                    
                     <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
                         ${project.autoRestart ? 
                             '<span class="badge bg-success"><i class="bi bi-arrow-clockwise me-1"></i>Auto-restart</span>' : 
