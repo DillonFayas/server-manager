@@ -1,3 +1,6 @@
+# This whole project was vibe-coded by Claude
+
+
 # Server Manager
 
 A comprehensive web-based dashboard for managing and monitoring projects on your Raspberry Pi or Linux server. Control your applications, view real-time logs, manage files, and execute commands from an intuitive web interface.
