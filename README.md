@@ -5,6 +5,9 @@
 
 A comprehensive web-based dashboard for managing and monitoring projects on your Raspberry Pi or Linux server. Control your applications, view real-time logs, manage files, and execute commands from an intuitive web interface.
 
+## Future Changes:
+Do not hard code "dilly" as the home directory, let the user select it during setup or make it automatically select based on which user is running the program
+
 ## 🌟 Features
 
 ### Project Management
