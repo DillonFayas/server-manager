@@ -4,7 +4,7 @@
 */
 
 function renderFileManager() {
-    const currentDir = AppState.fileManager.currentDirectory || '/home/meap';
+    const currentDir = AppState.fileManager.currentDirectory || '/home/dilly';
     const currentFile = AppState.fileManager.currentFile;
     const isEditorOpen = AppState.fileManager.editorOpen;
     

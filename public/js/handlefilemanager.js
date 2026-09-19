@@ -6,7 +6,7 @@
 // Initialize File Manager state
 if (!AppState.fileManager) {
     AppState.fileManager = {
-        currentDirectory: '/home/meap',
+        currentDirectory: '/home/dilly',
         currentFile: null,
         editorOpen: false,
         files: [],

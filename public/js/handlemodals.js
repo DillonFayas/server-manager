@@ -245,9 +245,9 @@ function exportLogs() {
     URL.revokeObjectURL(url);
 }
 
-// Command Modal with default /home/meap directory and auto-ls
+// Command Modal with default /home/dilly directory and auto-ls
 function showCommandModal() {
-    const defaultDir = '/home/meap';
+    const defaultDir = '/home/dilly';
     AppState.currentWorkingDir = defaultDir;
     AppState.availableDirectories = [];
     AppState.currentFiles = [];

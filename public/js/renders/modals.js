@@ -141,7 +141,7 @@ function renderCommandModal() {
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-folder"></i></span>
                                 <input type="text" id="command-directory" class="form-control" 
-                                    placeholder="/home/meap" onchange="updateCurrentDir()" />
+                                    placeholder="/home/dilly" onchange="updateCurrentDir()" />
                                 <button class="btn btn-outline-secondary" onclick="navigateUp()" title="Go up one directory">
                                     <i class="bi bi-arrow-up"></i>
                                 </button>

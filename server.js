@@ -737,7 +737,7 @@ app.post('/api/projects/:id/update', async (req, res) => {
         const gitEnv = { ...process.env };
         if (!gitEnv.HOME) {
             // Try to determine HOME from the project path
-            gitEnv.HOME = process.env.HOME || '/home/meap';
+            gitEnv.HOME = process.env.HOME || '/home/dilly';
             console.log(`[Git Update] Setting HOME to: ${gitEnv.HOME}`);
         }
 
@@ -825,7 +825,7 @@ app.post('/api/execute', async (req, res) => {
         }
 
         // Set HOME environment variable
-        const homeDir = process.env.HOME || '/home/meap';
+        const homeDir = process.env.HOME || '/home/dilly';
         const cmdEnv = { ...process.env, HOME: homeDir };
         
         console.log(`[Execute] Command: "${command}"`);

@@ -371,9 +371,9 @@ async function executeCommand() {
     const outputDiv = document.getElementById('command-output');
     const executeBtn = document.getElementById('execute-btn');
 
-    // Default to /home/meap if empty
+    // Default to /home/dilly if empty
     if (!directory) {
-        directory = '/home/meap';
+        directory = '/home/dilly';
         document.getElementById('command-directory').value = directory;
         AppState.currentWorkingDir = directory;
         document.getElementById('current-dir-display').textContent = directory;
