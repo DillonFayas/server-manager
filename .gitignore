@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+frontend/dist/
+dist/
+
+# Sensitive configuration — never commit
+config.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+coverage/
+test-results/
+playwright-report/
+
+# Env
+.env
+.env.local
