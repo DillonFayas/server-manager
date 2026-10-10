@@ -25,10 +25,8 @@ function createApp() {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        // CDN allowed only for Bootstrap CSS/icons during the F1–F4 migration window;
-        // removed in F4 when the old public/ UI is deleted.
-        styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
-        fontSrc: ["'self'", 'https://cdn.jsdelivr.net', 'data:'],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        fontSrc: ["'self'", 'data:'],
         scriptSrc: ["'self'"],
         imgSrc: ["'self'", 'data:'],
         connectSrc: ["'self'", 'ws:', 'wss:'],
@@ -60,8 +58,7 @@ function createApp() {
     next();
   });
 
-  // Static: old public/ during migration; frontend/dist once built (see F4)
-  app.use(express.static(path.join(__dirname, '..', 'public')));
+  // Static: React build output (old public/ Bootstrap UI deleted in F4)
   const distDir = path.join(__dirname, '..', 'frontend', 'dist');
   app.use(express.static(distDir));
 
