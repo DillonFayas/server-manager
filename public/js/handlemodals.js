@@ -602,7 +602,7 @@ function hideContextMenu() {
 // Hide context menu when clicking elsewhere
 document.addEventListener('click', hideContextMenu);
 
-// Email toggle
+// Email toggle — send only the changed field (backend rejects mass-assignment)
 async function toggleEmailAlerts(projectId, enabled) {
     try {
         const project = AppState.projects.find(p => p.id === projectId);
@@ -613,7 +613,7 @@ async function toggleEmailAlerts(projectId, enabled) {
         await fetch(`/api/projects/${projectId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(project)
+            body: JSON.stringify({ emailOnCrash: enabled })
         });
     } catch (error) {
         console.error('Failed to toggle email alerts:', error);
