@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 14% 96%;
+    --foreground: 224 71% 4%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 71% 4%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 220 14% 90%;
+    --secondary-foreground: 221 39% 11%;
+    --muted: 220 14% 92%;
+    --muted-foreground: 220 9% 42%;
+    --accent: 220 14% 90%;
+    --accent-foreground: 221 39% 11%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+    --success: 142 71% 38%;
+    --success-foreground: 210 40% 98%;
+    --warning: 38 92% 45%;
+    --warning-foreground: 26 83% 14%;
+    --info: 199 89% 48%;
+    --info-foreground: 210 40% 98%;
+    --border: 220 13% 86%;
+    --input: 220 13% 86%;
+    --ring: 221 83% 53%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 224 40% 8%;
+    --foreground: 210 40% 92%;
+    --card: 224 36% 11%;
+    --card-foreground: 210 40% 92%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 222 28% 17%;
+    --secondary-foreground: 210 40% 88%;
+    --muted: 222 28% 15%;
+    --muted-foreground: 218 11% 60%;
+    --accent: 222 28% 19%;
+    --accent-foreground: 210 40% 92%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+    --success: 142 69% 45%;
+    --success-foreground: 222 47% 11%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 26 83% 10%;
+    --info: 199 89% 55%;
+    --info-foreground: 222 47% 11%;
+    --border: 222 28% 20%;
+    --input: 222 28% 22%;
+    --ring: 217 91% 60%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply rounded bg-muted-foreground/30;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
