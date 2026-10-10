@@ -1,389 +1,135 @@
-# This whole project was vibe-coded by Claude
-
-
 # Server Manager
 
-A comprehensive web-based dashboard for managing and monitoring projects on your Raspberry Pi or Linux server. Control your applications, view real-time logs, manage files, and execute commands from an intuitive web interface.
+A web-based dashboard for managing and monitoring long-running projects (services, apps, scripts) on a Linux server or Raspberry Pi. Start/stop/restart projects, watch live logs, browse and edit files, and run shell commands — from any device on your network.
 
-## Future Changes:
-Do not hard code "dilly" as the home directory, let the user select it during setup or make it automatically select based on which user is running the program
+## Features
 
-## 🌟 Features
+- **Project management** — register projects (name, path, start command, tags), start/stop/restart them, git-pull updates, restart-all.
+- **Live monitoring** — real-time CPU/memory/uptime metrics and status over WebSocket; crash counting with dismissible alerts and email notifications.
+- **Live logs** — streamed log viewer with deduplication, timestamps, filtering, export, and clear.
+- **File manager** — browse directories, view/edit/save files, download, upload (drag & drop), with an integrated terminal.
+- **Command runner** — execute shell commands in any directory with history and a "save as project" shortcut.
+- **Authentication** — single-password session auth with rate limiting; every API route and WebSocket upgrade requires a valid session.
+- **Dark/light theme** — persisted per browser.
 
-### Project Management
-- **Start/Stop/Restart** projects with a single click
-- **Auto-restart** projects on system boot
-- **Real-time status updates** via WebSocket connections
-- **Git integration** - pull updates directly from the dashboard
-- **Tags and filtering** - organize projects with custom tags
-- **Crash tracking** - monitor project health and crash history
+## Requirements
 
-### Monitoring & Logging
-- **Real-time log streaming** with WebSocket connections
-- **CPU & Memory monitoring** with live updates every second
-- **Process uptime tracking** with formatted display
-- **Log filtering and search** - find what you need quickly
-- **Log deduplication** - combine repeated log lines
-- **Log export** - download logs as .txt files
-- **Persistent log history** - logs remain between modal opens
-- **Timestamps toggle** - show/hide log timestamps
+- Node.js ≥ 18 (tested on 18/20/24)
+- Linux or macOS for full process-management support (Windows works for development; process-tree kill uses `taskkill` there)
 
-### File Manager
-- **Full file system browser** with breadcrumb navigation
-- **File editing** with view/edit mode toggle
-- **File upload** via drag-and-drop or file picker
-- **Directory navigation** with up/refresh controls
-- **File type icons** for easy identification
-
-### Command Execution
-- **Interactive terminal** - run commands in any directory
-- **Directory browser** - navigate the file system visually
-- **Command history** - use ↑↓ arrows to recall previous commands
-- **Quick project directory access** - jump to project folders
-- **Save commands as projects** - convert successful commands into managed projects
-
-### Notifications & Alerts
-- **Email crash notifications** - get alerted when projects fail
-- **Crash history tracking** - view past crashes and exit codes
-- **Real-time status indicators** with animated badges
-- **Dismissable crash alerts** on project cards
-
-### User Interface
-- **Dark/Light theme** toggle
-- **Responsive design** - works on desktop, tablet, and mobile
-- **Mobile-friendly** hamburger menu
-- **Password-protected** access
-- **Clean, modern Bootstrap 5 UI**
-
-## 📋 Requirements
-
-- Node.js 14 or higher
-- Linux/Unix system (Raspberry Pi, Ubuntu, Debian, etc.)
-- `ps` command for resource monitoring
-- Git (optional, for project updates)
-- Gmail account with 2FA (optional, for email notifications)
-
-## 🚀 Installation
-
-### 1. Clone the Repository
+## Quick start
 
 ```bash
-git clone https://github.com/DillonFayas/server-manager.git
-cd server-manager
-```
-
-### 2. Install Dependencies
-
-```bash
+# 1. Install backend dependencies
 npm install
-```
 
-### 3. Run Setup Wizard
-
-Run the interactive setup wizard to configure your password, email notifications, and server settings:
-
-```bash
+# 2. Set an admin password (writes the bcrypt hash into config.json)
 npm run setup
-```
 
-The setup wizard will guide you through:
+# 3. Build the React frontend (once, or after frontend changes)
+npm run build
 
-- **Server Configuration**: Port and host settings (default: 5000, 0.0.0.0)
-- **Password Configuration**: Set your web interface password (minimum 4 characters)
-- **Email Configuration** (Optional): 
-  - Enable/disable email notifications
-  - Configure Gmail App Password for crash alerts
-
-#### Gmail App Password Setup (for Email Notifications)
-
-If you choose to enable email notifications during setup, you'll need:
-
-1. **Enable 2-Factor Authentication** on your Gmail account
-   - Go to [Google Account](https://myaccount.google.com/) → Security
-   - Enable 2-Step Verification
-
-2. **Generate an App Password**
-   - Go to Google Account → Security → 2-Step Verification
-   - Scroll to "App passwords" (at the bottom)
-   - Select app: "Mail"
-   - Select device: "Other (Custom name)" → Enter "Server Manager"
-   - Click "Generate"
-   - Copy the 16-character password (spaces are optional)
-
-3. Enter this App Password when prompted during setup
-
-#### Reconfiguring Later
-
-To change any settings later, simply run the setup wizard again:
-
-```bash
-npm run setup
-```
-
-Your project list will be preserved when reconfiguring.
-
-### 4. Start the Server
-
-```bash
+# 4. Start
 npm start
 ```
 
-The server will start on the configured port (default: 5000). Access it at:
-- Local: `http://localhost:5000`
-- Network: `http://YOUR_SERVER_IP:5000`
+Open `http://<server>:5000` and log in with the password you chose.
 
-## 🔄 Auto-Start on Boot (Ubuntu/Debian)
-
-To run Server Manager automatically on system startup and view logs in a terminal on desktop login:
-
-### Step 1: Create a systemd service
+### Development
 
 ```bash
-sudo nano /etc/systemd/system/server-manager.service
+npm run dev            # backend with nodemon
+npm run dev:frontend   # Vite dev server on :5173 (proxies /api and WebSockets to :5000)
 ```
 
-Add this content (modify paths and username as needed):
+The Vite dev server proxies `/api`, `/status`, and `/logs` to the backend, so you can develop the UI with hot reload against a locally running `npm run dev`.
 
-```ini
-[Unit]
-Description=Server Manager
-After=network.target
-
-[Service]
-Type=simple
-User=YOUR_USERNAME
-WorkingDirectory=/path/to/server-manager
-ExecStart=/usr/bin/node server.js
-Restart=always
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Replace:
-- `YOUR_USERNAME` with your Linux username
-- `/path/to/server-manager` with the full path to the project directory
-
-### Step 2: Enable and start the service
+### Tests
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable server-manager.service
-sudo systemctl start server-manager.service
+npm test           # run the backend test suite once
+npm run test:watch # watch mode
 ```
 
-### Step 3: Verify the service is running
+## Configuration
 
-```bash
-sudo systemctl status server-manager.service
+Configuration lives in `config.json` (created/updated by `npm run setup`). **Do not commit this file** — it contains the password hash and optional SMTP credentials.
+
+| Key | Description |
+|---|---|
+| `server.port` / `server.host` | Bind address (defaults `5000` / `0.0.0.0`). Overridable with `PORT` / `HOST` env vars. |
+| `auth.passwordHash` | bcrypt hash of the login password. Empty = login disabled (fails closed with 503). |
+| `session.secret` | Session cookie signing secret. Auto-generated if missing; override with `SESSION_SECRET`. |
+| `security.allowedRoots` | Optional array of absolute path prefixes. When non-empty, all file operations are confined to these roots. Empty (default) = unrestricted (original behavior). |
+| `execute.timeoutMs` | Max runtime for `/api/execute` commands (default 60000). |
+| `email.*` | SMTP settings for crash-alert emails (`enabled`, `service`, `user`, `pass`, `recipient`). Overridable with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`. |
+| `projects` | Managed project list. Runtime fields (`status`, `stats`, `health`) are stripped on load and stored only in memory. |
+
+Environment variable overrides (useful for containers/CI): `PORT`, `HOST`, `SESSION_SECRET`, `CONFIG_PATH`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`.
+
+## Architecture
+
+```
+server.js            # thin entrypoint → src/server.js
+src/
+  server.js          # Express app: helmet CSP, session, CSRF origin check, static, WS attach
+  config.js          # config load/save/migrate (atomic writes, mode 0600)
+  auth.js            # session middleware, login (rate-limited), requireAuth
+  validation.js      # zod schemas + validate/validateParams middleware
+  paths.js           # path containment (optional allowedRoots), upload-name sanitization
+  audit.js           # append-only JSONL audit log (audit.log)
+  ws.js              # /status broadcast + /logs/:id streams, session-checked upgrades
+  routes/
+    projects.js      # CRUD, start/stop/restart/restart-all, git update, clear-logs
+    files.js         # list/read/write/download/upload
+    execute.js       # shell execution with timeout + audit
+  services/
+    processManager.js # child-process lifecycle, stats sampling, log buffers, health
+    email.js          # nodemailer crash alerts
+frontend/            # React + TypeScript + Vite + Tailwind + shadcn/ui
+  src/
+    App.tsx, main.tsx
+    pages/           # LoginPage, DashboardPage, FileManagerPage
+    components/      # AppShell, ProjectCard, dialogs, ui/ primitives
+    hooks/           # useSession, useProjects, usePreferences
+    lib/             # typed API client, WS helper, utils
+tests/               # vitest + supertest backend suite
 ```
 
-You can view logs anytime with:
+See `ARCHITECTURE.md` for more detail and `SECURITY.md` for the threat model.
 
-```bash
-journalctl -u server-manager.service -f
-```
+## API overview
 
-### Step 4: Auto-open terminal on desktop login (Optional)
+All endpoints require an authenticated session (except `POST /api/login`). State-changing requests are additionally rejected cross-origin.
 
-To automatically open a terminal showing live logs when you log into the desktop:
+| Method & path | Purpose |
+|---|---|
+| `POST /api/login` | Password login (rate-limited) |
+| `POST /api/logout` | Destroy session |
+| `GET /api/session` | Check authentication |
+| `GET /api/projects` | List projects (with live status/stats/health) |
+| `POST /api/projects` | Create project |
+| `PUT /api/projects/:id` | Update project (allow-listed fields only) |
+| `DELETE /api/projects/:id` | Delete project |
+| `POST /api/projects/:id/start` \| `/stop` \| `/restart` | Lifecycle |
+| `POST /api/projects/restart-all` | Restart every running project |
+| `POST /api/projects/:id/update` | `git pull` in the project directory |
+| `POST /api/projects/:id/clear-logs` | Clear buffered logs |
+| `POST /api/file/list` | Directory listing |
+| `POST /api/file/read` \| `/write` \| `/download` \| `/upload` | File operations |
+| `POST /api/execute` | Run a shell command (timeout-limited) |
+| `WS /status` | Project status stream |
+| `WS /logs/:id` | Project log stream |
 
-```bash
-mkdir -p ~/.config/autostart
-nano ~/.config/autostart/manager-logs.desktop
-```
+## Upgrading from the original (pre-modernization) version
 
-Add this content:
+- **Authentication is now enforced on every route and WebSocket.** Scripts that called the API without logging in must first `POST /api/login` and send the `sm.sid` cookie.
+- `POST /api/projects/:id/update` is now the git-update endpoint (the old ambiguous `/api/projects/update` is gone).
+- `POST /api/file/list` replaces the previous `ls`-parsing approach in the file manager.
+- Runtime fields (`status`, `stats`, `health`) can no longer be set via the API (mass-assignment is rejected).
+- Uploaded filenames are sanitized (traversal sequences stripped).
+- `config.json` gained `security.allowedRoots`, `session.secret`, and `execute.timeoutMs`; old configs are migrated automatically on load.
 
-```ini
-[Desktop Entry]
-Type=Application
-Name=Server Manager Logs
-Exec=gnome-terminal -- bash -c "journalctl -u server-manager.service -f; exec bash"
-Hidden=false
-NoDisplay=false
-X-GNOME-Autostart-enabled=true
-```
+## License
 
-Now when you boot:
-- The Node.js app starts automatically (even without logging in)
-- If you log into the desktop, a terminal opens showing live logs
-- The app runs independently of whether you're logged in
-
-## 📖 Usage
-
-### Adding a Project
-
-1. Click **"Add Project"** in the navbar
-2. Fill in the form:
-   - **Project Name**: Display name for the project
-   - **Project Path**: Absolute path to the project directory
-   - **Start Command**: Command to run (e.g., `node server.js`, `python3 app.py`)
-   - **Tags** (optional): Comma-separated tags for organization
-   - **Auto-restart**: Start the project automatically on system boot
-   - **Email on Crash**: Send email alerts when the project crashes
-3. Click **"Save"**
-
-### Managing Projects
-
-Each project card provides these actions:
-
-- **Start/Stop/Restart**: Control project execution
-- **Update**: Run `git pull` in the project directory
-- **Logs**: View real-time logs with filtering and export
-- **Edit**: Modify project settings
-- **Delete**: Remove the project (with confirmation)
-
-### Project Metrics
-
-When a project is running, you'll see:
-- **CPU Usage**: Real-time CPU percentage across all processes
-- **Memory Usage**: Real-time memory percentage
-- **Uptime**: How long the process has been running
-
-Use the **"Show/Hide Metrics"** button in the navbar to toggle metrics visibility for all projects. Each project card also has an individual metrics toggle.
-
-### File Manager
-
-Access the File Manager from the navbar to:
-- Browse your entire file system
-- View and edit files directly in the browser
-- Upload files via drag-and-drop
-- Navigate with breadcrumb navigation
-- Execute commands in the current directory
-
-### Run Command Terminal
-
-Execute commands anywhere on your system:
-- Browse directories visually
-- Navigate with breadcrumb trail
-- Command history with ↑↓ arrows
-- Quick access to project directories
-- Save successful commands as new projects
-
-### Crash Tracking
-
-The system automatically tracks:
-- Number of crashes per project
-- Last crash time and exit code
-- Exit reason for failed processes
-
-Projects with crashes display a warning alert on their card. You can dismiss alerts or view crash history.
-
-### Tags and Filtering
-
-Organize projects with tags:
-- Add tags when creating/editing projects
-- Click tags in the filter bar to filter projects
-- Clear filters to show all projects
-
-## 🔧 Configuration Files
-
-### config.json
-Stores all application settings and projects (generated by `npm run setup`):
-
-```json
-{
-  "server": {
-    "port": 5000,
-    "host": "0.0.0.0"
-  },
-  "auth": {
-    "passwordHash": "bcrypt_hash_here"
-  },
-  "email": {
-    "enabled": false,
-    "service": "gmail",
-    "user": "your-email@gmail.com",
-    "pass": "your_app_password",
-    "recipient": "alerts@example.com"
-  },
-  "projects": [
-    {
-      "id": "abc123",
-      "name": "My Project",
-      "path": "/home/user/myproject",
-      "command": "npm start",
-      "tags": ["web", "production"],
-      "autoRestart": true,
-      "emailOnCrash": true
-    }
-  ]
-}
-```
-
-**Note**: This file is generated by the setup wizard and contains sensitive information. It's automatically excluded from git via `.gitignore`. Never commit this file to version control.
-
-### config.example.json
-Template configuration file (committed to repository). This file shows the structure but contains no sensitive data.
-
-## 🔒 Security Notes
-
-- **Change the default password** immediately after first login
-- Use HTTPS in production environments
-- Keep the server behind a firewall
-- **Don't expose to public internet** without proper authentication
-- App passwords are safer than regular Gmail passwords
-- Email passwords are never logged or displayed in the UI
-
-## 🛠️ Troubleshooting
-
-### Application won't start / "Failed to load configuration"
-Run the setup wizard:
-```bash
-npm run setup
-```
-
-### Forgot password
-Run the setup wizard again to reset your password:
-```bash
-npm run setup
-```
-
-### CPU/Memory not showing
-Ensure the `ps` command is available:
-```bash
-which ps  # Should return /bin/ps or similar
-```
-
-### Email not sending
-1. Run `npm run setup` and reconfigure email settings
-2. Verify 2-Factor Authentication is enabled on Gmail
-3. Make sure you're using an App Password, not your regular Gmail password
-4. Ensure "Email on Crash" toggle is enabled for the project
-5. Check server console for error messages
-
-### Projects not auto-starting
-Ensure `autoRestart` is set to `true` in project settings.
-
-### Logs not appearing
-1. Check WebSocket connection in browser console
-2. Verify the project is producing output
-3. Try refreshing the page
-4. Check server console for WebSocket errors
-
-### Service not starting on boot
-1. Check service status: `sudo systemctl status server-manager.service`
-2. View logs: `journalctl -u server-manager.service -n 50`
-3. Verify paths in service file are correct
-4. Ensure Node.js is installed at `/usr/bin/node` (check with `which node`)
-
-### Port already in use
-Either:
-- Stop the application using that port, or
-- Run `npm run setup` and change the port number
-
-Built with:
-- [Node.js](https://nodejs.org/)
-- [Express](https://expressjs.com/)
-- [Bootstrap 5](https://getbootstrap.com/)
-- [WebSocket (ws)](https://github.com/websockets/ws)
-- [bcrypt](https://github.com/kelektiv/node.bcrypt.js)
-- [nodemailer](https://nodemailer.com/)
-
----
-
-**Note**: This project is designed for personal/internal use. Always secure your server properly and keep it behind a firewall if exposing to a network.
+ISC
