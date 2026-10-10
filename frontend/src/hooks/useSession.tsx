@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { api, ApiError } from '@/lib/api';
+import { api } from '@/lib/api';
 
 type SessionState = 'loading' | 'authenticated' | 'unauthenticated';
 
@@ -17,15 +17,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      await api.session();
-      setState('authenticated');
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        setState('unauthenticated');
-      } else {
-        // Network/server error: treat as unauthenticated so Login is reachable
-        setState('unauthenticated');
-      }
+      const res = await api.session();
+      setState(res.authenticated ? 'authenticated' : 'unauthenticated');
+    } catch {
+      // Network/server error (incl. 401/503): treat as unauthenticated so Login is reachable
+      setState('unauthenticated');
     }
   }, []);
 
