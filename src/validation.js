@@ -1,12 +1,20 @@
 'use strict';
 
+const nodePath = require('path');
 const { z } = require('zod');
 
 const hexId = z.string().regex(/^[0-9a-f]{16}$/, 'Invalid project id');
 
 const projectFields = {
   name: z.string().trim().min(1).max(200),
-  path: z.string().trim().min(1).max(4096),
+  // FIX: relative paths made spawn fail with a cryptic `spawn /bin/sh ENOENT`
+  // (the cwd resolved against the server's working directory).
+  path: z
+    .string()
+    .trim()
+    .min(1)
+    .max(4096)
+    .refine((p) => nodePath.isAbsolute(p), 'must be an absolute path (e.g. /home/user/project)'),
   command: z.string().trim().min(1).max(4096),
   tags: z.array(z.string().trim().min(1).max(50)).max(50).optional().default([]),
   autoRestart: z.boolean().optional().default(false),

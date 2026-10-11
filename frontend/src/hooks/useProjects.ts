@@ -64,16 +64,20 @@ export function useProjects(): UseProjectsResult {
 
   const start = useCallback(
     async (id: string) => {
-      await api.startProject(id);
+      const res = await api.startProject(id);
       await refresh();
+      // FIX: `{ success: false }` responses are HTTP 200 — surface them as errors.
+      if (!res.success) throw new Error(res.message || 'Failed to start project');
     },
     [refresh]
   );
 
   const stop = useCallback(
     async (id: string) => {
-      await api.stopProject(id);
+      const res = await api.stopProject(id);
+      // Refresh either way so a stale "running" status corrects itself.
       await refresh();
+      if (!res.success) throw new Error(res.message || 'Failed to stop project');
     },
     [refresh]
   );

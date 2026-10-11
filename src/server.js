@@ -106,7 +106,10 @@ async function autoStartProjects() {
     console.log(`Auto-starting ${toStart.length} project(s)...`);
     for (const project of toStart) {
       console.log(`Auto-starting: ${project.name}`);
-      pm.startProject(project);
+      const result = await pm.startProject(project);
+      if (!result.success) {
+        console.error(`Auto-start failed for ${project.name}: ${result.message}`);
+      }
       await new Promise((r) => setTimeout(r, 2000));
     }
     console.log('All auto-start projects have been started');

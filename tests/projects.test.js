@@ -124,4 +124,53 @@ describe('project CRUD + lifecycle', () => {
     const badId = await srv.request('POST', '/api/projects/not-a-hex-id/start');
     expect(badId.status).toBe(400);
   });
+
+  it('T-PROJ-15: rejects relative project paths on create (spawn ENOENT regression)', async () => {
+    const res = await srv.request('POST', '/api/projects', {
+      body: { name: 'Relative', path: 'home/dilly/Server/robuy', command: LONG_CMD },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/absolute/);
+
+    const list = await srv.request('GET', '/api/projects');
+    expect(list.body.length).toBe(0);
+  });
+
+  it('T-PROJ-16: start fails with a clear error when the directory is missing', async () => {
+    const missing = `${workdir}-missing-${Date.now()}`;
+    const create = await srv.request('POST', '/api/projects', {
+      body: { name: 'Ghost', path: missing, command: LONG_CMD },
+    });
+    expect(create.status).toBe(200);
+
+    const start = await srv.request('POST', `/api/projects/${create.body.id}/start`);
+    expect(start.body.success).toBe(false);
+    expect(start.body.message).toMatch(/does not exist/);
+
+    const list = await srv.request('GET', '/api/projects');
+    const p = list.body.find((x) => x.id === create.body.id);
+    expect(p.status).toBe('stopped');
+
+    await srv.request('DELETE', `/api/projects/${create.body.id}`);
+  });
+
+  it('T-PROJ-17: start refuses a legacy relative path with an actionable message', async () => {
+    const legacyId = 'abcdef0123456789';
+    const legacy = await startTestServer({
+      config: {
+        projects: [{ id: legacyId, name: 'Legacy', path: 'home/dilly/Server/robuy', command: 'npm start' }],
+      },
+    });
+    await legacy.login();
+
+    const start = await legacy.request('POST', `/api/projects/${legacyId}/start`);
+    expect(start.status).toBe(200);
+    expect(start.body.success).toBe(false);
+    expect(start.body.message).toMatch(/absolute path/);
+
+    const list = await legacy.request('GET', '/api/projects');
+    expect(list.body[0].status).toBe('stopped');
+
+    await legacy.close();
+  });
 });

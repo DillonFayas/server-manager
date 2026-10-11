@@ -85,6 +85,7 @@ export default function ProjectDialog({ open, onOpenChange, project, initial, on
           <div className="space-y-2">
             <Label htmlFor="project-path">Path</Label>
             <Input id="project-path" value={path} onChange={(e) => setPath(e.target.value)} required maxLength={4096} placeholder="/home/user/project" />
+            <p className="text-xs text-muted-foreground">Absolute path to the project directory (must start with /).</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="project-command">Command</Label>

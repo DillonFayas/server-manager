@@ -20,7 +20,7 @@ Backend only; the frontend is verified by `npm run build` (strict TypeScript + V
 tests/
   helpers.js       # startTestServer(opts), tmpdir(), cookie-jar fetch, TEST_CONFIG
   auth.test.js     # T-AUTH-1/2, T-SEC-1 (401 sweep), rate limit, fail-closed 503
-  projects.test.js # T-PROJ-1/7/8/9/10/12/13/14, B-1 regression, S-6 regression, validation
+  projects.test.js # T-PROJ-1/7/8/9/10/12/13/14/15/16/17, B-1 regression, S-6 regression, validation
   files.test.js    # T-FM-2/4/5/6, T-CMD-4, execute timeout, T-LOG-8
   security.test.js # T-SEC-2..8 (traversal, upload sanitization, CSRF origin, XSS-as-data)
   unit.test.js     # T-UNIT-1 formatUptime, T-UNIT-2 sanitizeUploadName, T-UNIT-3 config migration

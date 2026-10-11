@@ -2,6 +2,27 @@
 
 All notable changes to this project are documented here. Dates use ISO format.
 
+## [2.0.1] — 2026-10-10
+
+Fix: starting a project with a bad path no longer reports a fake success (the `spawn /bin/sh ENOENT` bug).
+
+### Fixed
+
+- `POST /api/projects/:id/start` now returns an accurate result: it waits for the child to actually spawn and returns `{ success: false, message }` on failure instead of `{ success: true, pid: undefined }`. A failed spawn no longer leaves a stale `running` entry (the `exit` event never fires for a process that never started).
+- Start pre-flight checks produce actionable errors instead of `spawn /bin/sh ENOENT`:
+  - relative path → `Project path must be an absolute path (got "…")`
+  - missing directory → `Project directory does not exist: …`
+- Project path validation (create and update) now requires an absolute path; a permanent `error` listener on every child prevents a spawn failure from crashing the server.
+- Frontend surfaces `{ success: false }` start/stop responses as error toasts (they are HTTP 200, so previously silent); ProjectDialog shows an absolute-path hint under the Path input.
+- Git update returns a clear error when the project directory is missing instead of a raw `git` failure.
+- Session: SPA reads `authenticated` from `GET /api/session` and refreshes state (redirect-to-login regression, `73e1c81`).
+- CSP/LAN: `upgrade-insecure-requests` removed and COOP/HSTS relaxed so the dashboard is reachable over plain-HTTP LAN (`7b22718`).
+- `.gitattributes` enforces LF line endings (`b886517`).
+
+### Tests
+
+- Backend: 32 → 35 tests. Added T-PROJ-15 (relative path rejected on create), T-PROJ-16 (missing directory start fails cleanly), T-PROJ-17 (legacy relative-path config refuses to start with an actionable message).
+
 ## [2.0.0] — 2026-10-09
 
 Modernization release. Backend security/correctness hardening and full frontend rewrite.

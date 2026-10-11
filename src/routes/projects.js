@@ -2,6 +2,7 @@
 
 const express = require('express');
 const crypto = require('crypto');
+const fs = require('fs');
 const { exec, spawn } = require('child_process');
 const { getConfig, saveConfig } = require('../config');
 const { requireAuth } = require('../auth');
@@ -35,8 +36,7 @@ function createProjectsRouter() {
 
       setTimeout(() => {
         for (const project of runningProjects) {
-          pm.startProject(project);
-          pm.markRestarting(project.id, false);
+          pm.startProject(project).finally(() => pm.markRestarting(project.id, false));
         }
       }, 2000);
 
@@ -108,13 +108,18 @@ function createProjectsRouter() {
   });
 
   // Start project
-  router.post('/:id/start', validateParams(schemas.projectId), (req, res) => {
-    const config = getConfig();
-    const project = config.projects.find((p) => p.id === req.params.id);
-    if (!project) return res.status(404).json({ error: 'Project not found' });
-    const result = pm.startProject(project);
-    audit(req, 'project-start', req.params.id, {}, result.success);
-    res.json(result);
+  router.post('/:id/start', validateParams(schemas.projectId), async (req, res) => {
+    try {
+      const config = getConfig();
+      const project = config.projects.find((p) => p.id === req.params.id);
+      if (!project) return res.status(404).json({ error: 'Project not found' });
+      const result = await pm.startProject(project);
+      audit(req, 'project-start', req.params.id, {}, result.success);
+      res.json(result);
+    } catch (error) {
+      audit(req, 'project-start', req.params.id, { error: error.message }, false);
+      res.status(500).json({ success: false, error: error.message });
+    }
   });
 
   // Stop project
@@ -136,8 +141,7 @@ function createProjectsRouter() {
       await pm.stopProject(req.params.id, true);
 
       setTimeout(() => {
-        pm.startProject(project);
-        pm.markRestarting(req.params.id, false);
+        pm.startProject(project).finally(() => pm.markRestarting(req.params.id, false));
       }, 2000);
 
       audit(req, 'project-restart', req.params.id);
@@ -160,6 +164,15 @@ function createProjectsRouter() {
     const config = getConfig();
     const project = config.projects.find((p) => p.id === req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    // Pre-flight: give a clear message instead of a cryptic spawn ENOENT.
+    let dirStat = null;
+    try {
+      dirStat = fs.statSync(project.path);
+    } catch { /* not found */ }
+    if (!dirStat || !dirStat.isDirectory()) {
+      return res.json({ success: false, message: `Project directory does not exist: ${project.path}`, output: '' });
+    }
 
     console.log(`[Git Update] Starting update for ${project.name} at ${project.path}`);
     audit(req, 'project-update-git', req.params.id, { path: project.path });
