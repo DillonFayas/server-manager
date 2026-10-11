@@ -30,9 +30,20 @@ function createApp() {
         scriptSrc: ["'self'"],
         imgSrc: ["'self'", 'data:'],
         connectSrc: ["'self'", 'ws:', 'wss:'],
+        // Removed: the app is served over plain HTTP on LAN IPs, and this
+        // directive makes the browser upgrade /assets/* to https:// which
+        // then fails (ERR_SSL_PROTOCOL_ERROR) and leaves a blank page.
+        'upgrade-insecure-requests': null,
       },
     },
+    // Over plain HTTP these headers are ignored by browsers and only
+    // produce console warnings (untrustworthy origin).
+    crossOriginOpenerPolicy: false,
+    originAgentCluster: false,
     crossOriginEmbedderPolicy: false,
+    // No HSTS: plain-HTTP LAN deployment; sending it risks locking the UI
+    // behind https if TLS is ever added and then removed.
+    strictTransportSecurity: false,
   }));
 
   app.use(sessionMiddleware);
