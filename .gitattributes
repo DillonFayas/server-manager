@@ -1,0 +1,4 @@
+# Enforce LF line endings in the repository and in every checkout.
+# The project lives in OneDrive and is edited on Windows/WSL/Linux; without
+# this, sync/editors rewrite files to CRLF and dirty the whole tree.
+* text=auto eol=lf
