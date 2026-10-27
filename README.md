@@ -14,14 +14,15 @@ A web-based dashboard for managing and monitoring long-running projects (service
 
 ## Requirements
 
-- Node.js ≥ 18 (tested on 18/20/24)
+- Development/deployment toolchain: Node.js 24.20.0 (`.nvmrc`) and npm 12.0.2 (`packageManager` in both packages).
 - Linux or macOS for full process-management support (Windows works for development; process-tree kill uses `taskkill` there)
 
 ## Quick start
 
 ```bash
-# 1. Install backend dependencies
-npm install
+# 1. Install dependencies from both committed lockfiles
+npm ci
+npm --prefix frontend ci
 
 # 2. Set an admin password (writes the bcrypt hash into config.json)
 npm run setup
@@ -129,6 +130,31 @@ All endpoints require an authenticated session (except `POST /api/login`). State
 - Runtime fields (`status`, `stats`, `health`) can no longer be set via the API (mass-assignment is rejected).
 - Uploaded filenames are sanitized (traversal sequences stripped).
 - `config.json` gained `security.allowedRoots`, `session.secret`, and `execute.timeoutMs`; old configs are migrated automatically on load.
+
+## Dependency and deployment hygiene
+
+Use the same npm version on development machines and the server. With nvm
+installed on Linux/macOS, run `nvm install` and `nvm use` in this repository,
+then `npm install --global npm@12.0.2`. On Windows, use nvm-windows to install
+and select Node.js 24.20.0, then install npm 12.0.2. The server's previous
+Node.js 22.22.1 is too old for npm 12.0.2; switch Node before updating npm.
+Toolchain changes do not restart an already running service; check its Node
+executable path before your next planned restart.
+
+For deployment, run `npm ci`, `npm --prefix frontend ci`, then `npm run build`.
+These clean installs replace node_modules, so run them during your deployment
+window. They preserve the committed lockfiles. Use `npm install` for intentional
+dependency changes, review the resulting lockfile diff, and commit the relevant
+package.json and package-lock.json together. Both lockfiles remain tracked;
+generated `*.tsbuildinfo` caches are ignored.
+
+For the existing server checkout with lockfile metadata churn, first copy and run
+`scripts/clean-server-build-artifacts.sh` on the server (it can run from `/tmp`
+before pulling this commit). It backs up the four affected files outside the
+checkout, refuses staged changes or lockfile changes beyond removed `libc`
+metadata, then restores only those lockfiles and tracked build caches. It does
+not touch config, .env, application data, or existing backups. Review its output
+and run `git pull --ff-only` yourself. No sudo is required for this cleanup.
 
 ## License
 

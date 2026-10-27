@@ -24,3 +24,6 @@ playwright-report/
 # Env
 .env
 .env.local
+
+# TypeScript incremental build caches
+*.tsbuildinfo
