@@ -59,3 +59,9 @@ Manual/E2E checklist (mirrors the feature-preservation table in IMPLEMENTATION_P
 1. Use `startTestServer()` from `tests/helpers.js` — never instantiate Express by hand in tests.
 2. Name tests with the spec ID (`T-XXX-n`) used in SYSTEM_SPECIFICATION.md / IMPLEMENTATION_PLAN.md when covering a documented behavior or regression.
 3. For regressions, reference the finding id in the test name (e.g. `T-SEC-2 (S-6 regression): ...`).
+
+## Linux process lifecycle regression tests
+
+Run `node --test tests/process-lifecycle.linux.cjs` with a native Linux Node runtime.
+These exercise nested shell/Node descendants, SIGTERM-resistant workers, wrapper crashes,
+stop/start overlap, unexpected signals, and intentional stops. Windows skips these tests.

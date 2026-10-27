@@ -84,6 +84,7 @@ async function updateAllStats() {
   for (const [projectId, proc] of processes.entries()) {
     if (proc && proc.pid) {
       const stats = await getProcessStats(proc.pid, proc.startTime);
+      if (processes.get(projectId) !== proc || proc.exiting || proc.stopRequested) continue;
       processStats.set(projectId, stats);
       broadcaster.broadcastStatus(projectId, 'running', stats, projectHealth.get(projectId));
     }
@@ -99,38 +100,43 @@ function pushLog(projectId, text) {
   broadcaster.broadcastLog(projectId, text, timestamp);
 }
 
+// Every POSIX project is started in its own process group. Signal the whole
+// group, including grandchildren reparented after the shell/npm wrapper exits.
 async function killProcessTree(pid) {
-  try {
-    if (process.platform === 'win32') {
-      await new Promise((resolve) => {
-        exec(`taskkill /PID ${pid} /T /F`, () => resolve());
+  if (!Number.isInteger(pid) || pid <= 1) throw new Error('Invalid project PID');
+  if (process.platform === 'win32') {
+    await new Promise((resolve, reject) => {
+      exec(`taskkill /PID ${pid} /T /F`, (error) => {
+        // taskkill also reports failure when the process has already exited.
+        if (error) {
+          try { process.kill(pid, 0); } catch (err) {
+            if (err.code === 'ESRCH') return resolve();
+          }
+          return reject(error);
+        }
+        resolve();
       });
-      return;
-    }
-    const childPids = await getChildPids(pid);
-    for (const childPid of childPids) {
-      try {
-        process.kill(childPid, 'SIGTERM');
-      } catch { /* already dead */ }
-    }
-    try {
-      process.kill(pid, 'SIGTERM');
-    } catch { /* already dead */ }
-
-    await new Promise((r) => setTimeout(r, 1000));
-
-    const remainingChildren = await getChildPids(pid);
-    for (const childPid of remainingChildren) {
-      try {
-        process.kill(childPid, 'SIGKILL');
-      } catch { /* already dead */ }
-    }
-    try {
-      process.kill(pid, 'SIGKILL');
-    } catch { /* already dead */ }
-  } catch (error) {
-    console.error('Error killing process tree:', error);
+    });
+    return;
   }
+  const signalGroup = (signal) => {
+    try { process.kill(-pid, signal); } catch (error) {
+      if (error.code !== 'ESRCH') throw error;
+    }
+  };
+  signalGroup('SIGTERM');
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  // The leader may have exited already; descendants retain its group ID.
+  signalGroup('SIGKILL');
+}
+
+function cleanProcess(proc) {
+  if (!proc.cleanupPromise) {
+    proc.cleanupPromise = proc.pid ? killProcessTree(proc.pid) : Promise.resolve();
+    // A failed cleanup must remain visible and keep the start slot reserved.
+    proc.cleanupPromise.catch(() => { proc.cleanupPromise = null; });
+  }
+  return proc.cleanupPromise;
 }
 
 async function startProject(project) {
@@ -165,10 +171,13 @@ async function startProject(project) {
       cwd: project.path,
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: true,
-      detached: false,
+      detached: process.platform !== 'win32',
+      windowsHide: true,
     });
 
     proc.startTime = Date.now();
+    let resolveCompletion;
+    proc.completion = new Promise((resolve) => { resolveCompletion = resolve; });
 
     if (!logStreams.has(project.id)) logStreams.set(project.id, []);
     if (!projectHealth.has(project.id)) {
@@ -185,38 +194,37 @@ async function startProject(project) {
       pushLog(project.id, `\nError: ${err.message}\n`);
     });
 
-    proc.on('exit', async (code, signal) => {
-      console.log(`Project ${project.name} exited with code ${code}, signal ${signal}`);
-      if (proc.pid) await killProcessTree(proc.pid);
+    proc.on('exit', (code, signal) => {
+      proc.exiting = true;
+      // Catch all asynchronous cleanup failures: event emitters do not await us.
+      (async () => {
+        console.log(`Project ${project.name} exited with code ${code}, signal ${signal}`);
+        await cleanProcess(proc);
+        // A late callback must never delete or broadcast over a newer process.
+        if (processes.get(project.id) !== proc) return;
+        processes.delete(project.id);
+        processStats.delete(project.id);
+        const reason = signal ? `Killed by signal ${signal}` : `Exited with code ${code}`;
+        pushLog(project.id, `\nProcess ${reason.toLowerCase()}\n`);
 
-      const wasTracked = processes.get(project.id) === proc;
-      processes.delete(project.id);
-      processStats.delete(project.id);
-
-      pushLog(project.id, `\nProcess exited with code ${code}\n`);
-
-      // A failed spawn cleans up and reports itself; don't double-report.
-      if (!wasTracked) return;
-
-      if (!restartingProjects.has(project.id)) {
-        if (code !== 0 && code !== null) {
+        if (!proc.stopRequested && (signal || (code !== 0 && code !== null))) {
           const health = projectHealth.get(project.id) || { crashCount: 0, lastCrash: null };
           health.crashCount++;
-          health.lastCrash = {
-            time: new Date().toISOString(),
-            code,
-            reason: `Exited with code ${code}`,
-          };
+          health.lastCrash = { time: new Date().toISOString(), code, signal, reason };
           projectHealth.set(project.id, health);
-
-          if (project.emailOnCrash) {
-            await sendCrashEmail(project, code, logStreams.get(project.id) || []);
-          }
+          // Publish stopped before notification I/O; email failure cannot hide it.
           broadcaster.broadcastStatus(project.id, 'stopped', null, health);
-        } else {
+          if (project.emailOnCrash) {
+            try { await sendCrashEmail(project, code ?? signal, logStreams.get(project.id) || []); }
+            catch (error) { console.error('Crash email failed:', error.message); }
+          }
+        } else if (!restartingProjects.has(project.id)) {
           broadcaster.broadcastStatus(project.id, 'stopped', null, projectHealth.get(project.id));
         }
-      }
+      })().catch((error) => {
+        console.error(`Cleanup failed for ${project.name}:`, error);
+        pushLog(project.id, `\nProcess cleanup failed: ${error.message}. Stop again before starting.\n`);
+      }).finally(resolveCompletion);
     });
 
     // Claim the slot synchronously so a concurrent start cannot double-spawn
@@ -233,8 +241,11 @@ async function startProject(project) {
     });
 
     if (!spawned) {
-      processes.delete(project.id);
-      processStats.delete(project.id);
+      if (processes.get(project.id) === proc) {
+        processes.delete(project.id);
+        processStats.delete(project.id);
+      }
+      resolveCompletion();
       const message = `Failed to start "${project.command}" in ${project.path}: the process could not be spawned (missing directory or shell)`;
       console.error(`Failed to start project ${project.name}: ${message}`);
       pushLog(project.id, `\n${message}\n`);
@@ -243,8 +254,8 @@ async function startProject(project) {
     }
 
     // Stopped (or replaced) while spawn was in flight — reap the child.
-    if (processes.get(project.id) !== proc) {
-      if (proc.pid) await killProcessTree(proc.pid);
+    if (processes.get(project.id) !== proc || proc.stopRequested) {
+      await cleanProcess(proc);
       return { success: false, message: 'Project was stopped during startup' };
     }
 
@@ -266,10 +277,14 @@ async function stopProject(id, skipBroadcast = false) {
     return { success: false, message: 'Project not running' };
   }
   try {
-    if (proc.pid) await killProcessTree(proc.pid);
-    processes.delete(id);
-    processStats.delete(id);
-    if (!skipBroadcast) {
+    proc.stopRequested = true;
+    await cleanProcess(proc);
+    await proc.completion;
+    if (processes.get(id) === proc) {
+      processes.delete(id);
+      processStats.delete(id);
+    }
+    if (!skipBroadcast && !processes.has(id)) {
       broadcaster.broadcastStatus(id, 'stopped', null, projectHealth.get(id));
     }
     return { success: true, message: 'Project stopped' };
